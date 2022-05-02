@@ -5,7 +5,7 @@ import os
 from lxml import etree as ET
 import numpy as np
 import trimesh
-
+from urllib.parse import urlparse
 
 def rpy_to_matrix(coords):
     """Convert roll-pitch-yaw coordinates to a 3x3 homogenous rotation matrix.
@@ -180,6 +180,18 @@ def unparse_origin(matrix):
     return node
 
 
+def resolve_filepath(base_path, file_path):
+    parsed_url = urlparse(file_path)
+    dirname = base_path
+    file_path = parsed_url.netloc + parsed_url.path
+    while not dirname == '/':
+        resolved_filepath = os.path.join(dirname, file_path)
+        # print(resolved_filepath)
+        if os.path.exists(resolved_filepath):
+            return resolved_filepath
+        dirname = os.path.dirname(dirname)
+    return False
+
 def get_filename(base_path, file_path, makedirs=False):
     """Formats a file path correctly for URDF loading.
 
@@ -199,6 +211,7 @@ def get_filename(base_path, file_path, makedirs=False):
         The resolved filepath -- just the normal ``file_path`` if it was an
         absolute path, otherwise that path joined to ``base_path``.
     """
+    file_path = resolve_filepath(base_path, file_path)
     fn = file_path
     if not os.path.isabs(file_path):
         fn = os.path.join(base_path, file_path)
